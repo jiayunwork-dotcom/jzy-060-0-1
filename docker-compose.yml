@@ -1,0 +1,26 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ops-realtime-dashboard:latest
+    container_name: ops-dashboard
+    ports:
+      - "8080:8080"
+    environment:
+      # Server pushes one point per source every second; points retained 24h.
+      TICK_INTERVAL_MS: "1000"
+      RETENTION_MS: "86400000"
+      AUTO_FAULTS: "true"
+    volumes:
+      # Historical data + alert rules + dashboard layout live in the volume.
+      - ops-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  ops-data:
